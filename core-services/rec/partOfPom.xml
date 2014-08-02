@@ -1,0 +1,304 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.jpmc.dart</groupId>
+	<artifactId>dart-assemble-web</artifactId>
+	<name>Dart assemble web</name>
+	<packaging>war</packaging>
+	<description>Dart assemble web</description>
+
+	<parent>
+		<groupId>com.jpmc.dart</groupId>
+		<artifactId>dart-web-parent</artifactId>
+		<version>2.2.18-SNAPSHOT</version>
+	</parent>
+
+	<dependencies>
+
+		<!-- test JARs starts -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-mock</artifactId>
+			<version>2.0.8</version>
+			<type>jar</type>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.jpmc.dart</groupId>
+			<artifactId>dart-data-test-base</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- test JARs ends -->
+	</dependencies>
+
+	<properties>
+		<jetty-version>6.1.7</jetty-version>
+	</properties>
+
+	<build>
+		<finalName>dart-assemble-web</finalName>
+		<resources>
+			<resource>
+				<directory>src/main/java</directory>
+				<filtering>false</filtering>
+				<includes>
+					<include>**/*.vm</include>
+					<include>**/*.properties</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<includes>
+					<include>**/*.xml</include>
+					<include>**/*.properties</include>
+					<include>**/*.xsd</include>
+				</includes>
+				<excludes>
+					<exclude>application.properties</exclude>
+					<exclude>log4j.xml</exclude>
+				</excludes>
+			</resource>
+		</resources>
+		<testResources>
+			<testResource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<includes>
+					<include>**/*.properties</include>
+					<include>**/*.xml</include>
+				</includes>
+			</testResource>
+			<testResource>
+				<directory>src/test/resources</directory>
+				<filtering>false</filtering>
+				<includes>
+					<include>**/*</include>
+				</includes>
+			</testResource>
+		</testResources>
+
+		<plugins>
+			<plugin>
+				<groupId>org.mortbay.jetty</groupId>
+				<artifactId>maven-jetty-plugin</artifactId>
+				<version>6.1.11</version>
+				<configuration>
+					<contextPath>/dart-assemble-web</contextPath>
+					<webAppSourceDirectory>${basedir}/target/dart-assemble-web
+					</webAppSourceDirectory>
+					<classesDirectory>${basedir}/target/dart-assemble-web/WEB-INF/classes
+					</classesDirectory>
+					<scanIntervalSeconds>4</scanIntervalSeconds>
+					<systemProperties>
+						<systemProperty>
+							<name>bypassSSO</name>
+							<value>true</value>
+						</systemProperty>
+						<systemProperty>
+							<name>bypassPCFOnError</name>
+							<value>true</value>
+						</systemProperty>
+						<systemProperty>
+							<name>devMode</name>
+							<value>true</value>
+						</systemProperty>
+						<systemProperty>
+							<name>usesso</name>
+							<value>w461936</value>
+						</systemProperty>
+					</systemProperties>
+					<useTestClasspath>true</useTestClasspath>
+					<testClassesDirectory>${basedir}/target/test-classes
+					</testClassesDirectory>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>commons-dbcp</groupId>
+						<artifactId>commons-dbcp</artifactId>
+						<version>1.4</version>
+					</dependency>
+					<dependency>
+						<groupId>commons-pool</groupId>
+						<artifactId>commons-pool</artifactId>
+						<version>1.5.7</version>
+					</dependency>
+
+				</dependencies>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.5</version>
+				<configuration>
+					<parallel>methods</parallel>
+					<forkMode>always</forkMode>
+					<argLine>-Xms512m -Xmx512m</argLine>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>buildnumber-maven-plugin</artifactId>
+				<version>1.0-beta-3</version>
+				<executions>
+					<execution>
+						<phase>compile</phase>
+						<goals>
+							<goal>create</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<format>{0,number}</format>
+					<items>
+						<item>buildNumber0</item>
+					</items>
+				</configuration>
+			</plugin>
+			<!-- Create a 'dog tag' to identify -->
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>build-dogtag</id>
+						<phase>compile</phase>
+						<configuration>
+							<tasks>
+								<tstamp>
+									<format property="build.time.stamp" pattern="MM/dd/yyyy HH:mm.ss zz" />
+								</tstamp>
+								<typedef resource="org/tigris/subversion/svnant/svnantlib.xml" classpathref="maven.plugin.classpath" />
+								<!-- javahl, svnkit, javasvn are directives on how to use SVN from 
+									ANT. Seems our SVN is old on AIX. -->
+								<svn svnkit="true" username="${jpmc.vpc.svn.user}" password="${jpmc.vpc.svn.pass}" failonerror="false">
+									<info target="./" propPrefix="svn.info." />
+								</svn>
+
+								<property name="build.dog.tag.dir" value="${project.build.directory}/${project.build.finalName}" />
+								<property name="build.dog.tag.file" value="${build.dog.tag.dir}/build.txt" />
+								<property name="build.version.tag.file" value="${build.dog.tag.dir}/WEB-INF/classes/version.properties" />
+								<property name="build.version.src.file" value="src/main/resources/version.properties" />
+
+								<mkdir dir="${build.dog.tag.dir}" />
+								<mkdir dir="${build.dog.tag.dir}/WEB-INF/classes/" />
+
+								<echo message="Creating file: ${build.dog.tag.file}" />
+								<echo file="${build.dog.tag.file}" append="false">
+									Release Base
+									Name:
+									${project.name}
+									(${project.groupId}:${project.artifactId})
+									Release
+									version:
+									${project.version}
+									Date built:
+									${build.time.stamp}
+									Build User Id:
+									${user.name}
+									SVN URL:
+									${svn.info.url}
+									SVN Current Revision:
+									${svn.info.rev}
+									SVN Change
+									Revision: ${svn.info.lastRev}
+									SVN
+									Change
+									Revision Date:
+									${svn.info.lastDate}
+								</echo>
+								<echo file="${build.version.tag.file}" message="release.version=${project.version}-${buildNumber}" />
+								<copy file="${build.version.tag.file}" tofile="${build.version.src.file}" overwrite="true" />
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>org.tigris.subclipse</groupId>
+						<artifactId>svnant</artifactId>
+						<version>1.2.1</version>
+					</dependency>
+					<dependency>
+						<groupId>org.tigris.subclipse</groupId>
+						<artifactId>svnClientAdapter</artifactId>
+						<version>1.2.1</version>
+					</dependency>
+					<dependency>
+						<groupId>org.tigris.subclipse</groupId>
+						<artifactId>svnjavahl</artifactId>
+						<version>1.2.1</version>
+					</dependency>
+					<dependency>
+						<groupId>org.tigris.subclipse</groupId>
+						<artifactId>svnkit</artifactId>
+						<version>1.2.1</version>
+					</dependency>
+					<dependency>
+						<groupId>ch.ethz.ganymed</groupId>
+						<artifactId>ganymed-ssh2</artifactId>
+						<version>build210</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+
+			<!-- Copy WAR file for Wagon to use -->
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-war</id>
+						<phase>verify</phase>
+						<!-- phase>generate-sources</phase -->
+						<configuration>
+							<tasks>
+								<!--property name="deploy.war.dir" value="target/war/deploy" / -->
+								<delete dir="${deploy.war.dir}" />
+								<mkdir dir="${deploy.war.dir}" />
+								<copy failonerror="false" preservelastmodified="true" file="target/${project.build.finalName}.war" todir="${deploy.war.dir}" verbose="true" />
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- wagon to deploy our war to dev -->
+			<plugin>
+				<groupId>org.apache.myfaces.maven</groupId>
+				<artifactId>wagon-maven-plugin</artifactId>
+				<version>1.0.2</version>
+				<executions>
+					<execution>
+						<id>release-deploy</id>
+						<phase>deploy</phase>
+						<configuration>
+							<inputDirectory>${deploy.war.dir}</inputDirectory>
+							<id>vpc.deploy</id>
+							<url>${jpmc.dart.war.deploy.uri}/${project.version}</url>
+						</configuration>
+						<goals>
+							<goal>deploy</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+  <scm>
+    <connection>scm:svn:http://subversion.ny.jpmorgan.com/svn/repos/VPCGEN2/SharedServices/tags/jpmc-dart-parent-2.2.15</connection>
+  </scm>
+</project>
+

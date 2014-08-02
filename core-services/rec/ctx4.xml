@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+    					http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+              			http://www.springframework.org/schema/context 
+              			http://www.springframework.org/schema/context/spring-context-3.1.xsd
+    					http://www.springframework.org/schema/util 
+    					http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+
+	<import resource="core-services-client-http-context.xml"/>
+	<import resource="handy-jmx-beans.xml"/>
+	<import resource="classpath:heartbeat.xml"/>
+
+	<bean id="PerformanceCounterDao" class="com.jpmc.dart.dao.jdbc.PerformanceCounterDao">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>	
+
+	<bean id="PerformanceEventProcessor" class="com.jpmc.dart.coreservices.perfcounter.PerformanceCounterService" >
+	</bean>
+
+	<bean id="PerformanceCounterExtract" class="com.jpmc.dart.coreservices.perfcounter.PerformanceCounterExtract" >
+	</bean>
+
+	<bean id="StatsCollectorProcess" class="com.jpmc.dart.coreservices.perfcounter.collectors.StatsCollectorProcess" >
+		<property name="testMode" value="${collect.test.mode:false}"/>
+	</bean>
+
+	<bean id="BaseCollector" abstract="true" >
+		<property name="machineInformation" ref="MachineInformation"/>
+		<property name="baseName" value="${filesystem.root}"/>
+	</bean>
+
+	<bean id="BaseJmxCollector" abstract="true"  parent="BaseCollector">
+		<property name="heartBeat" ref="HeartBeat"/>
+	</bean>
+
+
+	<bean id="FindAliveJvmsLocal"  class="com.jpmc.dart.coreservices.heartbeat.FindAliveJvmsLocal" >
+		<property name="machineInformation" ref="MachineInformation"/>
+		<property name="testMode" value="${collect.test.mode:false}"/>
+	</bean>
+
+	<bean id="FindAliveJvmsFromOtherHosts"  class="com.jpmc.dart.coreservices.heartbeat.FindAliveJvmsFromOtherHosts" >
+		<property name="machineInformation" ref="MachineInformation"/>
+		<property name="hosts" value="${core.client.remote.urls}"/>
+		<property name="httpWrapper" ref="HttpWrapper"/>
+	</bean>
+
+	<bean id="NfsInfoCollector" parent="BaseCollector" class="com.jpmc.dart.coreservices.perfcounter.collectors.NfsInfoCollector" >
+	</bean>
+
+	<bean id="InputOutputStatsCollector" parent="BaseJmxCollector" class="com.jpmc.dart.coreservices.perfcounter.collectors.InputOutputStatsCollector" >
+	</bean>
+	
+	<bean id="MetricGraphRrenderer" class="com.jpmc.dart.coreservices.perfcounter.MetricGraphRrenderer" >
+		<property name="managedTempFiles" ref="ManagedTempFiles"/>
+	</bean>
+	    					
+</beans>
+    					

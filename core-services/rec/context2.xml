@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    					http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+              			http://www.springframework.org/schema/context
+              			http://www.springframework.org/schema/context/spring-context-3.1.xsd
+    					http://www.springframework.org/schema/util
+    					http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+
+    <import resource="classpath:ctoFwkAllContext.xml" />
+	<import resource="classpath:ctoFwkActiveMq5JmsFactoryContext.xml" />
+	<import resource="classpath:ctoFrameworkCompat.xml"/>
+	<import resource="classpath:dartDaoContext.xml"/>
+	<import resource="classpath:file-external-setup-context.xml"/>
+    <import resource="file-archive-context.xml"/>
+    <import resource="performance-counter-context.xml"/>
+
+	<bean id="helper" class="com.jpmc.dart.commons.util.FileSystemHelper">
+		<property name="filesystemRoot" value="${filesystem.root}" />
+		<property name="atmInPath" value="${atm.file.in.path}" />
+		<property name="fileOutPath" value="${file.out.path}" />
+		<property name="atmErrorPath" value="${atm.file.error.path}" />
+		<property name="atmSegFilePath" value="${atm.file.segregate.path}" />
+		<property name="atmUnsegFilePath" value="${atm.file.unsegregate.path}" />
+		<property name="imageRoot" value="${atm.image.root.path}" />
+	</bean>
+
+	<bean id="configDao" class="com.jpmc.vpc.dao.jdbc.ConfigurationDao">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>
+
+	<bean id="lockManager" class=" com.jpmc.cto.framework.concurrent.SimpleLockManager">
+			<property name="lockProvider" ref="VpcLockDao" />
+			<property name="expirationPolicy">
+				<bean class="com.jpmc.cto.framework.concurrent.EmptyExpirationPolicy"/>
+			</property>
+	</bean>
+
+	<bean id="VpcLockDao" class="com.jpmc.vpc.dao.jdbc.VpcLockDao" parent="daoParent">
+	</bean>
+
+	<bean id="daoParent" abstract="true">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>
+
+	<context:annotation-config/>
+</beans>
