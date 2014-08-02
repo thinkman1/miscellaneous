@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+              http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+              http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+              http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+              http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+              http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.0.xsd">
+
+	<import resource="classpath:dartDaoContext.xml"/>
+	<import resource="core-services-client-http-context.xml"/>
+
+	<bean id="configDao" class="com.jpmc.vpc.dao.jdbc.ConfigurationDao">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>
+
+	<bean id="ManagedTempFiles" class="com.jpmc.dart.helpers.ManagedTempFiles"/>
+
+	<bean id="HttpClientConnect" class="com.jpmc.dart.coreservices.filefinder.impl.httpclient.HttpClientConnect" scope="prototype">
+		<property name="temps" ref="ManagedTempFiles"/>
+		<property name="mypass" value="${file.server.pazz}"/>
+		<property name="httpWrapper" ref="HttpWrapper"/>
+	</bean>
+
+	<bean id="HttpClientFileClient" class="com.jpmc.dart.coreservices.filefinder.impl.httpclient.HttpClientFileClient">
+		<property name="remoteUrls" value="${core.client.remote.urls}"/>
+		<property name="fileNameUtils" ref="fileNameUtils"/>
+		<property name="workDirectory" value="${core.client.workdir}"/>
+	</bean>
+
+ 	<bean id="fileClientExporter" class="org.springframework.jmx.export.MBeanExporter">
+    <property name="beans">
+      <map>
+        <entry key="support:name=HttpClientFileClientBean" value-ref="HttpClientFileClient"/>
+      </map>
+    </property>
+    <property name="registrationBehaviorName" value="REGISTRATION_IGNORE_EXISTING"/>
+  </bean>
+
+	<bean id="fileNameUtils" class="com.jpmc.dart.commons.util.FileNameUtils">
+		<property name="baseDirectory" value="${filesystem.root}"/>
+		<property name="otherBaseDirectories" value="${filesystem.root}" />
+	</bean>
+
+	<bean id="CoreImageClient" class="com.jpmc.dart.coreservices.filefinder.CoreImageClient">
+		<property name="fileFinder" ref="HttpClientFileClient"/>
+		<property name="nastyClient">
+			<bean class="com.jpmc.dart.commons.image.ImageRepoClient">
+				<constructor-arg ref="configDao" />
+				<property name="debitDao" >
+					<bean class="com.jpmc.dart.dao.jdbc.DebitDao" parent="ccdaoParent" />
+				</property>
+				<property name="bwImgRoot"  value="${atm.bw.image.path}" />
+				<property name="greyImgRoot"  value="${atm.grey.image.path}" />
+			</bean>
+		</property>
+		<property name="fileNameUtils" ref="fileNameUtils"/>
+		<property name="fileSyncClient" ref="fileSyncClient"/>
+		<property name="fileDao">
+			<bean class="com.jpmc.dart.dao.jdbc.FileDao" parent="ccdaoParent" />
+		</property>
+		<property name="debitDao">
+			<bean class="com.jpmc.dart.dao.jdbc.DebitDao" parent="ccdaoParent" />
+		</property>
+	</bean>
+
+	<bean id="ccdaoParent" abstract="true">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>
+
+</beans>
+
+

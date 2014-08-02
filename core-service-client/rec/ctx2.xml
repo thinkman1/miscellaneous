@@ -1,0 +1,59 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+              http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+              http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+              http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+              http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+              http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.0.xsd">
+
+	<bean id="httpClient" class="org.apache.commons.httpclient.HttpClient" scope="prototype">
+		<constructor-arg ref="httpConnManager" />
+		<property name="params" ref="httpClientParams" />
+	</bean>
+
+	<bean id="httpConnManager"
+		class="org.apache.commons.httpclient.SimpleHttpConnectionManager"
+		destroy-method="shutdown"
+		scope="prototype">
+		<property name="params" ref="httpConnParams" />
+	</bean>
+	
+	
+	<bean id="httpConnParams"
+		class="org.apache.commons.httpclient.params.HttpConnectionManagerParams"
+		parent="baseHttpConnParams">
+		<property name="maxTotalConnections" value="30" />
+		<property name="defaultMaxConnectionsPerHost" value="30" />
+	</bean>
+	
+	<bean id="httpClientParams" class="org.apache.commons.httpclient.params.HttpClientParams">
+		<property name="connectionManagerTimeout" value="30000" />
+		<property name="soTimeout" value="30000" />
+	</bean>
+
+	<bean id="baseHttpConnParams"
+		class="org.apache.commons.httpclient.params.HttpConnectionManagerParams"
+		abstract="true">
+		<property name="connectionTimeout" value="30000" />
+		<property name="soTimeout" value="30000" />
+		<property name="tcpNoDelay" value="true" />
+		<property name="staleCheckingEnabled" value="true" />
+	</bean>	
+
+	<bean id="ManagedTempFiles" class="com.jpmc.dart.helpers.ManagedTempFiles">
+	</bean>
+
+	<bean id="HttpWrapper" class="com.jpmc.dart.coreservices.util.HttpWrapper" >
+		<property name="temps" ref="ManagedTempFiles"/>
+		<property name="workDirectory" value="${core.client.workdir}"/>
+	</bean>
+
+
+
+              
+</beans>              
