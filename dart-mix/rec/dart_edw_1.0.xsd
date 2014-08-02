@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="http://dart.jpmchase.net/xsd/edw/1.0.0" xmlns="http://dart.jpmchase.net/xsd/edw/1.0.0"
+	elementFormDefault="qualified">
+
+	<xsd:annotation>
+		<xsd:appinfo>DART (Appquest ID: 31340)</xsd:appinfo>
+		<xsd:documentation>This Schema defines the data we send to EDW.
+		</xsd:documentation>
+	</xsd:annotation>
+
+	<!-- definition of simple elements -->
+	<xsd:simpleType name="countType">
+		<xsd:annotation>
+			<xsd:documentation>Common type for counting items.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:positiveInteger" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="amountType">
+		<xsd:annotation>
+			<xsd:documentation>Common type used for Amounts. All amounts are
+				integers. Divide by 100 to dollar/cents
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedLong" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="idType">
+		<xsd:annotation>
+			<xsd:documentation>Type used for UUID's. This is not restrictive on
+				purpose
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:minLength value="36" />
+			<xsd:maxLength value="36" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="sequenceType">
+		<xsd:annotation>
+			<xsd:documentation>Type intended for use of Sequence values.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedLong">
+			<xsd:minInclusive value="1" />
+			<xsd:totalDigits value="15" />
+			<xsd:whiteSpace value="collapse" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="tranCodeType">
+		<xsd:annotation>
+			<xsd:documentation>Type used for DDA Tran Codes</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedLong">
+			<xsd:minInclusive value="1" />
+			<xsd:totalDigits value="4" />
+			<xsd:whiteSpace value="collapse" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="atmIdType">
+		<xsd:annotation>
+			<xsd:documentation>Type used for the ATM ID. The ATM ID must be two
+				characters followed by four numbers
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:token">
+			<xsd:pattern value="[A-Z][A-Z][0-9][0-9][0-9][0-9]" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="archiveTypeType">
+		<xsd:annotation>
+			<xsd:documentation>Define the archive type. This tag is meant to
+				define whether the item passed in is paper or electronic.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:token">
+			<xsd:pattern value="ELECTRONIC|PAPER" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<!-- Attribute groups -->
+	<xsd:attributeGroup name="unitOfWorkAttributes">
+		<xsd:attribute name="id" type="idType" use="required" />
+		<xsd:attribute name="type" use="required">
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:token">
+					<xsd:pattern value="FILE" />
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:attribute>
+		<xsd:attribute name="numTrxn" use="required" type="countType" />
+		<xsd:attribute name="numCR" use="required" type="countType" />
+		<xsd:attribute name="numDR" use="required" type="countType" />
+		<xsd:attribute name="amountCR" type="amountType" use="required" />
+		<xsd:attribute name="amountDR" type="amountType" use="required" />
+		<xsd:attribute name="createTime" type="xsd:dateTime"
+			use="required" />
+		<xsd:attribute name="receiveTime" type="xsd:dateTime"
+			use="required" />
+		<xsd:attribute name="splitFile" use="required" type="xsd:boolean" />
+		<xsd:attribute name="refId" use="required" type="xsd:positiveInteger" />
+	</xsd:attributeGroup>
+
+	<xsd:attributeGroup name="terminalInformationAttributes">
+		<xsd:annotation>
+			<xsd:documentation>Attributes about the terminal we got the data
+				from.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="atmXmlVersion" use="required"
+			type="xsd:positiveInteger" />
+		<xsd:attribute name="atmId" use="required" type="atmIdType" />
+		<xsd:attribute name="machineType" use="required" type="xsd:token" />
+	</xsd:attributeGroup>
+
+	<xsd:attributeGroup name="transactionAttributes">
+		<xsd:attribute name="id" type="idType" use="required" />
+		<xsd:attribute name="numCR" use="required" type="countType" />
+		<xsd:attribute name="numDR" use="required" type="countType" />
+		<xsd:attribute name="amountCR" type="amountType" use="required" />
+		<xsd:attribute name="amountDR" type="amountType" use="required" />
+	</xsd:attributeGroup>
+
+	<!-- Complex types -->
+	<xsd:complexType name="dartDataType">
+		<xsd:annotation>
+			<xsd:documentation>The root node of the document. This denotes the
+				data comes from DART (Appquest ID: 31340).
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="tracking" type="trackingDataType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="unitOfWork" type="unitOfWorkType"
+				minOccurs="1" maxOccurs="1" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="unitOfWorkType">
+		<xsd:annotation>
+			<xsd:documentation>All of the work into DART comes in as some sort of
+				'Unit of Work'. Today these are files only.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="terminalInformation" type="terminalInformationType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="systemDisposition" type="systemDispositionType"
+				minOccurs="0" maxOccurs="unbounded" />
+			<xsd:element name="transaction" type="transactionType"
+				minOccurs="1" maxOccurs="unbounded" />
+		</xsd:sequence>
+		<xsd:attributeGroup ref="unitOfWorkAttributes" />
+	</xsd:complexType>
+
+	<xsd:complexType name="trackingDataType">
+		<xsd:annotation>
+			<xsd:documentation>Simple tag to mark if this file represents input
+				to DART or output.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="type" use="required">
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:token">
+					<xsd:pattern value="INPUT|OUTPUT" />
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="addressType">
+		<xsd:annotation>
+			<xsd:documentation>Define an address as DART sees it.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="street" type="xsd:normalizedString" />
+			<xsd:element name="city" type="xsd:normalizedString" />
+			<xsd:element name="state" type="xsd:normalizedString" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="micrType">
+		<xsd:annotation>
+			<xsd:documentation>Define the fields as seen the MICR line. This
+				definition is forgiving.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="auxOnUs" type="xsd:normalizedString" />
+			<xsd:element name="epc" type="xsd:normalizedString" />
+			<xsd:element name="rt" type="xsd:normalizedString" />
+			<xsd:element name="optionalField" type="xsd:normalizedString" />
+			<xsd:element name="account" type="xsd:normalizedString" />
+			<xsd:element name="processControl" type="xsd:normalizedString" />
+			<xsd:element name="amount" type="amountType" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="terminalInformationType">
+		<xsd:annotation>
+			<xsd:documentation>Information about the ATM terminal that sent this
+				data
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="localDateTime" type="xsd:dateTime" />
+			<xsd:element name="address" type="addressType" />
+			<xsd:element name="ipAddress" type="ip4AddressType" />
+		</xsd:sequence>
+		<xsd:attributeGroup ref="terminalInformationAttributes" />
+	</xsd:complexType>
+
+	<xsd:complexType name="systemDispositionType">
+		<xsd:annotation>
+			<xsd:documentation>The system can make various changes or keep notes
+				as data passes through. This documents those changes.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="data" type="xsd:string" />
+		</xsd:sequence>
+		<xsd:attribute name="type" use="required" type="xsd:token" />
+		<xsd:attribute name="dispDate" use="required" type="xsd:dateTime" />
+	</xsd:complexType>
+
+	<xsd:simpleType name="ip4AddressType">
+		<xsd:annotation>
+			<xsd:documentation>Copied from http://www.java2s.com - defines an IP
+				address properly
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:token">
+			<xsd:pattern value="([0-9]*\.){3}[0-9]*" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:complexType name="transactionType">
+		<xsd:annotation>
+			<xsd:documentation>Defines a Transaction sent to DART. A transaction
+				can consist of one or more credits and one or more debits. The
+				monetary value of the credits must match the monetary value of the
+				valid debits.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="systemDisposition" type="systemDispositionType"
+				minOccurs="0" maxOccurs="unbounded" />
+			<xsd:element name="transactionSourceInformation" type="transactionSourceInformationType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="pan" minOccurs="1" maxOccurs="1">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:token">
+						<xsd:pattern value="[0-9]*" />
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="sequenceNumber" type="sequenceType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="transactionTime" type="xsd:dateTime"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="posting" type="postingType" minOccurs="0"
+				maxOccurs="2" />
+			<xsd:element name="notificationSummary" minOccurs="0"
+				maxOccurs="1">
+				<xsd:complexType>
+					<xsd:attribute name="sendTime" type="xsd:dateTime" />
+				</xsd:complexType>
+			</xsd:element>
+			<xsd:element name="credit" type="creditType" minOccurs="0"
+				maxOccurs="unbounded" />
+			<xsd:element name="debit" type="debitType" minOccurs="0"
+				maxOccurs="unbounded" />
+			<xsd:element name="notes" type="notesType" minOccurs="0"
+				maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attributeGroup ref="transactionAttributes" />
+	</xsd:complexType>
+
+	<xsd:complexType name="transactionSourceInformationType">
+		<xsd:annotation>
+			<xsd:documentation>The transactions, as sent from ATM, have various
+				pieces of data that help us make a decision. This element holds all
+				of those.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="type" type="xsd:token" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="source" type="xsd:token" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="status" type="xsd:token" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="requestStatus" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="returnStatus" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="itemCount" type="countType" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="exceptionItemCount" type="countType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="escrowItemCount" type="countType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="reportedDepositAmount" type="amountType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="ulid" type="xsd:normalizedString"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="fiid" type="fiidType" minOccurs="1"
+				maxOccurs="3" />
+			<xsd:element name="feeAmount" type="amountType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="dispenseAmount" type="amountType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="requestedTransactionDate" type="xsd:date"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="terminalSettleDate" type="xsd:date"
+				minOccurs="1" maxOccurs="1" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="postingType">
+		<xsd:annotation>
+			<xsd:documentation>For every valid item DART gets or assembles it
+				must be posted for the transaction to take effect. There are two
+				types of posting - financial (real money) and reporting.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="postTime" type="xsd:dateTime"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="postLocation" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="type" use="required">
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:token">
+					<xsd:pattern value="FINANCIAL|REPORTING" />
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="creditType">
+		<xsd:annotation>
+			<xsd:documentation>A credit is money being applied to someone's
+				account.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="systemDisposition" type="systemDispositionType"
+				minOccurs="0" maxOccurs="unbounded" />
+			<xsd:element name="accountType" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="tranCode" type="tranCodeType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="micrLine" type="micrType" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="archiveType" type="archiveTypeType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="history" type="historyType" minOccurs="0"
+				maxOccurs="unbounded" />
+			<xsd:element name="notes" type="notesType" minOccurs="0"
+				maxOccurs="1" />
+			<xsd:element name="claimHistory" type="claimHistoryType"
+				minOccurs="0" maxOccurs="1" />
+			<xsd:element name="notification" type="notificationType"
+				minOccurs="0" maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="id" use="required" type="idType" />
+	</xsd:complexType>
+
+	<xsd:complexType name="debitType">
+		<xsd:annotation>
+			<xsd:documentation>A debit in DART can either be a check or cash.
+				Either way it is something taken away from someones account.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="systemDisposition" type="systemDispositionType"
+				minOccurs="0" maxOccurs="unbounded" />
+			<xsd:element name="itemStatus" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="priorityPost" type="xsd:boolean"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="cash" type="cashType" minOccurs="0"
+				maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>This will not exist if the debit is a check.
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="disposition" type="xsd:token"
+				minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>This will not exist if the debit is cash.
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="micrLine" type="micrType" minOccurs="0"
+				maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>This will not exist if the debit is cash.
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="archiveType" type="archiveTypeType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="history" type="historyType" minOccurs="0"
+				maxOccurs="unbounded" />
+			<xsd:element name="captureInformation" type="captureInformationType"
+				minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>This is only applicable for check debits
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="notes" type="notesType" minOccurs="0"
+				maxOccurs="1" />
+			<xsd:element name="remediationHistory" type="remediationHistoryType"
+				minOccurs="0" maxOccurs="1" />
+			<xsd:element name="notification" type="notificationType"
+				minOccurs="0" maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="id" use="required" type="idType" />
+	</xsd:complexType>
+
+	<xsd:complexType name="historyType">
+		<xsd:annotation>
+			<xsd:documentation>Tag to track changes to the financial pieces of
+				data coming through DART
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="version" type="xsd:nonNegativeInteger"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="micrLine" type="micrType" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="whenChanged" type="xsd:dateTime"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="whoChanged" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="changeType" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="captureInformationType">
+		<xsd:annotation>
+			<xsd:documentation>Track original capture information about this
+				item. Initially this will just be the scores.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="amountScore" type="xsd:integer"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="micrScore" type="xsd:integer"
+				minOccurs="1" maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="captureType" use="optional" type="xsd:token" />
+		<xsd:attribute name="used" use="optional" type="xsd:boolean" />
+	</xsd:complexType>
+
+	<xsd:complexType name="notesType">
+		<xsd:annotation>
+			<xsd:documentation>DART allows notes to be added by users as items
+				pass through.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="note" type="noteType" minOccurs="1"
+				maxOccurs="unbounded" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="noteType">
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:string">
+				<xsd:attribute name="key" use="required" type="xsd:token" />
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="claimHistoryType">
+		<xsd:annotation>
+			<xsd:documentation>A divert item can be matched to a claim. This tag
+				allows for the tracking of that.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="claimNumber" type="xsd:normalizedString"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="claimKey" type="xsd:normalizedString"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="claimOwner" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="accountNumber" type="xsd:normalizedString"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="transactionAmount" type="amountType"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="transactionDate" type="xsd:date"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="claimDescription" type="xsd:normalizedString"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="userId" type="xsd:token" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="previousMatchAmount" type="amountType"
+				minOccurs="1" maxOccurs="1" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="notificationType">
+		<xsd:annotation>
+			<xsd:documentation>Some systems (currently only DRQ) sends a
+				notification back about what they did with an item. Currently this
+				is only used for reporting in DART. Credit will not have the User or
+				the Status.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="micrLine" type="micrType" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="status" type="xsd:token" minOccurs="0"
+				maxOccurs="1" />
+			<xsd:element name="userId" type="xsd:token" minOccurs="0"
+				maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="wasAdjusted" use="required" type="xsd:boolean" />
+	</xsd:complexType>
+
+	<xsd:complexType name="cashType">
+		<xsd:annotation>
+			<xsd:documentation>A debit can be cash or check. This tag allows for
+				the definition of the item if it is cash.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="cashItem" type="cashItemType"
+				minOccurs="0" maxOccurs="unbounded" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="cashItemType">
+		<xsd:annotation>
+			<xsd:documentation>This tag represents one or more of a specific
+				currency ($1, $2, $5, etc bills)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="currency">
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:token">
+					<xsd:pattern value="USD" />  <!-- Might add more later -->
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:attribute>
+		<xsd:attribute name="denomination">
+			<xsd:simpleType>
+				<xsd:restriction base="amountType">
+					<xsd:enumeration value="100" />
+					<xsd:enumeration value="200" />
+					<xsd:enumeration value="500" />
+					<xsd:enumeration value="1000" />
+					<xsd:enumeration value="2000" />
+					<xsd:enumeration value="5000" />
+					<xsd:enumeration value="10000" />
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:attribute>
+		<xsd:attribute name="count" type="countType" />
+	</xsd:complexType>
+
+	<xsd:complexType name="remediationHistoryType">
+		<xsd:annotation>
+			<xsd:documentation>Items can be changes by users. This tag groups up
+				those changes.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="remediation" type="remediationType"
+				minOccurs="1" maxOccurs="unbounded" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="remediationType">
+		<xsd:annotation>
+			<xsd:documentation>This is a specific remediation type.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="version" type="xsd:nonNegativeInteger"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="actionTaken" type="xsd:token"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="amount" type="amountType" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="startTime" type="xsd:dateTime"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="endTime" type="xsd:dateTime"
+				minOccurs="1" maxOccurs="1" />
+			<xsd:element name="priority" type="xsd:short" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="type" type="xsd:token" minOccurs="1"
+				maxOccurs="1" />
+			<xsd:element name="userId" type="xsd:token" minOccurs="1"
+				maxOccurs="1" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="fiidType">
+		<xsd:annotation>
+			<xsd:documentation>Defines the FIID value and type. FIID is the
+				Financial Institutin Idenfier - which is used as one of the internal
+				banks throughout Chase. There are three type: TERM (market bank of
+				the terminal), CARD (bank the debit card belongs to), and ACCT (bank
+				owning the account the </xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:token">
+				<xsd:attribute name="fiidType" use="required">
+					<xsd:simpleType>
+						<xsd:restriction base="xsd:token">
+							<xsd:enumeration value="CARD" />
+							<xsd:enumeration value="TERM" />
+							<xsd:enumeration value="ACCT" />
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<!-- Our root element -->
+	<xsd:element name="dartData" type="dartDataType">
+		<xsd:annotation>
+			<xsd:documentation>Root element of this schema.</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+</xsd:schema>
