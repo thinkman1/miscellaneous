@@ -1,0 +1,94 @@
+	<bean id="insertFileSynchronization" class="java.lang.String">
+		<constructor-arg
+			value="
+				INSERT INTO FILE_SYNCHRONIZATION (
+				ID,
+				INSERT_DATE,
+				CREATE_TIME,
+				RETRY_COUNT,
+				FILE_SYNC_STATUS_ID,
+				SOURCE_DATACENTER_ID,
+				SOURCE_SERVER,
+				SOURCE_FILENAME,
+				DEST_DATACENTER_ID,
+				FILE_SIZE,
+				FILE_HASH,
+				ENQUEUED_TIME,
+				COPY_START_TIME,
+				COPY_FINISH_TIME,
+				DEST_SERVER,
+				DEST_FILENAME,
+				LAST_MESSAGE
+				) VALUES (
+				?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		" />
+	</bean>
+	
+		<bean id="findFileSynchronizationByIdAndInsertDate" class="java.lang.String">
+		<constructor-arg
+			value="
+		        select fs.*,
+				source_dc.name as SOURCE_DATACENTER_NAME,
+				dest_dc.name as DEST_DATACENTER_NAME
+				from file_synchronization fs
+				join application_datacenter source_dc
+				on source_dc.id = fs.source_datacenter_id
+				join application_datacenter dest_dc
+				on dest_dc.id = fs.dest_datacenter_id
+				WHERE fs.ID = ?
+				AND fs.INSERT_DATE = ?
+        " />
+	</bean>
+	
+			<bean id="findFileSynchronizationById" class="java.lang.String">
+		<constructor-arg
+			value="
+		        select fs.*,
+				source_dc.name as SOURCE_DATACENTER_NAME,
+				dest_dc.name as DEST_DATACENTER_NAME
+				from file_synchronization fs
+				join application_datacenter source_dc
+				on source_dc.id = fs.source_datacenter_id
+				join application_datacenter dest_dc
+				on dest_dc.id = fs.dest_datacenter_id
+				WHERE fs.ID = ?
+        " />
+	</bean>
+	
+		<bean id="findFileSyncCountBySourceFilenameAndInsertDate" class="java.lang.String">
+		<constructor-arg
+			value="
+		        SELECT count(1) FROM FILE_SYNCHRONIZATION WHERE SOURCE_FILENAME = ? AND INSERT_DATE = ?
+        " />
+	</bean>
+
+	<bean id="findForwardDateListInAscendingOrder" class="java.lang.String">
+		<constructor-arg
+			value="
+				select distinct insert_date from file_synchronization where insert_date &gt; ? order by insert_date asc
+		" />
+	</bean>
+
+	<bean id="findBackwardDateListInDescendingOrder" class="java.lang.String">
+		<constructor-arg
+			value="
+				select distinct insert_date from file_synchronization where insert_date &lt; ? order by insert_date desc
+		" />
+	</bean>
+	
+		<bean id="getMinDateForFileSyncAll" class="java.lang.String">
+		<constructor-arg
+			value="Select min(insert_date)
+				From File_Synchronization
+				where File_Sync_Status_Id = 1
+				" />
+	</bean>
+
+
+	<bean id="getMinDateForStuckFileSync" class="java.lang.String">
+		<constructor-arg
+			value="Select min(insert_date)
+				From File_Synchronization
+				where File_Sync_Status_Id = 2
+				and (sysdate - create_time)*24*60 >  30" />
+	</bean>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    					http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+              			http://www.springframework.org/schema/context
+              			http://www.springframework.org/schema/context/spring-context-3.1.xsd
+    					http://www.springframework.org/schema/util
+    					http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+
+	<import resource="fileSyncContext.xml"/>
+
+	<bean id="scanForWorkTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean" lazy-init="true">
+        <property name="jobDetail" ref="scanForWorkJob" />
+		<property name="cronExpression">
+			<value>0/15/30/45 * * * * ?</value>
+		</property>
+	</bean>
+
+
+
+	<bean id="scanForWorkJob" class="org.springframework.scheduling.quartz.JobDetailBean">
+		<property name="jobClass">
+			<value>com.jpmc.dart.filesync.servicesla.FileSyncWorkScanner</value>
+		</property>
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="fileSyncClient" value-ref="fileSyncClient" />
+		        <entry key="lock" value-ref="lockManager" />
+		        <entry key="serviceClient" value-ref="serviceClient" />
+		        <entry key="resultSize" value="${dart.filesync.serviceclientsla.resultsize}" />
+		        <entry key="pingUrl" value="${dart.filesync.worker.targeturl}" />
+		        <entry key="httpFileSender" value-ref="fileSyncHttpSender"/>
+			</map>
+		</property>
+	</bean>
+
+
+	<bean id="scanStuckItemsTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean" lazy-init="true">
+        <property name="jobDetail" ref="scanStuckItemsJob" />
+		<property name="cronExpression">
+			<value>0 0/10 * * * ?</value>
+		</property>
+	</bean>
+
+	<bean id="scanStuckItemsJob" class="org.springframework.scheduling.quartz.JobDetailBean">
+		<property name="jobClass">
+			<value>com.jpmc.dart.filesync.servicesla.StuckItemsScanner</value>
+		</property>
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="fileSyncClient" value-ref="fileSyncClient" />
+		        <entry key="lockManager" value-ref="lockManager" />
+		        <entry key="serviceClient" value-ref="serviceClient" />
+		        <entry key="httpFileSender" value-ref="fileSyncHttpSender"/>
+			</map>
+		</property>
+	</bean>
+
+</beans>

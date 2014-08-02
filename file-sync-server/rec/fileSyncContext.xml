@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    					http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+              			http://www.springframework.org/schema/context
+              			http://www.springframework.org/schema/context/spring-context-3.1.xsd
+    					http://www.springframework.org/schema/util
+    					http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+
+	<import resource="classpath:ctoFwkAllContext.xml" />
+	<import resource="classpath:ctoFwkActiveMq5JmsFactoryContext.xml" />
+	<import resource="classpath:ctoFrameworkCompat.xml"/>
+	<import resource="classpath:dartDaoContext.xml"/>
+	<import resource="classpath:core-services-dependencies-context.xml"/>
+
+	<bean id="dartTxManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>
+
+	<bean id="txTemplate" class="org.springframework.transaction.support.TransactionTemplate">
+		<property name="transactionManager" ref="dartTxManager" />
+	</bean>
+
+	<bean id="lockManager" class="com.jpmc.dart.filesync.servicesla.NoCareLockManager">
+			<property name="lockProvider" ref="VpcLockDao" />
+	</bean>
+
+	<bean id="WorkerThreadFactory" class="com.jpmc.dart.filesync.http.WorkerThreadFactory">
+		<property name="maxThreads" value="${dart.filesync.maxconcurrentlistener}" />
+	</bean>
+
+	<bean id="JmsThreadPool" factory-bean="WorkerThreadFactory" factory-method="getThreadPool" destroy-method="shutdown"
+		class="java.util.concurrent.ThreadPoolExecutor">
+	</bean>
+
+	<bean id="VpcLockDao" class="com.jpmc.vpc.dao.jdbc.VpcLockDao" parent="daoParent"/>
+
+
+	<bean id="FileSyncWorkerProvider" class="com.jpmc.cto.framework.jms.JmsListenerContainer">
+		<property name="containerName" value="FileSyncWorker" />
+		<property name="processor" ref="FileSyncWorker"/>
+		<property name="destinationName" value="${dart.filesync.work.queue}"/>
+		<property name="concurrentConsumers" value="${dart.filesync.maxconcurrentlistener}"/>
+		<property name="maxConcurrentConsumers" value="${dart.filesync.maxconcurrentlistener}"/>
+		<property name="connectionFactory" ref="fwkJmsFactory"/>
+		<property name="acceptMessagesWhileStopping" value="true"/>
+	</bean>
+
+	<bean id="serverConf" class="com.jpmc.dart.filesync.server.HttpFileRecieverConf">
+		<property name="passKey" value="${file.server.pazz}"/>
+		<property name="writeFileRetryCount" value="${dart.filesync.filereceiver.retrycount}"/>
+		<property name="writeFileTimeInbetweenRetry" value="${dart.filesync.filereceiver.timebetweenretry}"/>
+	</bean>
+
+	<bean id="FileSyncUpdateWorkBatcher" class="com.jpmc.dart.filesync.http.FileSyncUpdateWorkBatcher">
+		<!-- Defined in core-client-services -->
+		<property name="fileSynchronizationDao" ref="FileSynchronizationDao"/>
+		<property name="tx" ref="txTemplate"/>
+	</bean>
+
+	<bean id="FileSyncWorker" class="com.jpmc.dart.filesync.http.FileSynchronizationWorker">
+		<!-- Defined in core-client-services -->
+		<property name="fileSynchronizationDao" ref="FileSynchronizationDao"/>
+		<property name="httpFileSender" ref="fileSyncHttpSender"/>
+		<property name="fileReadRetryCount" value="${dart.filesync.worker.filereadretrycount}"/>
+		<property name="fileReadTimeBetweenRetry" value="${dart.filesync.worker.filereadtimebetweenretry}"/>
+		<property name="fileNameUtils" ref="fileNameUtils"/>
+		<property name="useMmio" ref="useNio"/>
+		<property name="tx" ref="txTemplate"/>
+		<property name="fileFinderClient" ref="HttpClientFileClient"/>
+		<property name="sourcePrefix" value="${fs.local.root}"/>
+	</bean>
+
+	<bean id="useNio" class="java.lang.Boolean">
+		<constructor-arg>
+			<value>${dart.filesync.usemmap}</value>
+		</constructor-arg>
+	</bean>
+
+
+	<!-- Get this from Core Client Context??  Seems like we should migrate that to a File Sync client someday -->
+	<!--  bean id="fileSyncUtil" class="com.jpmc.dart.commons.util.FileSyncUtil">
+		<property name="fileSynchronizationDao" ref="fileSynchronizationDao"/>
+		<property name="applicationDatacenterDao" ref="applicationDatacenterDao"/>
+	</bean -->
+
+
+	<!-- Daos starts -->
+	<bean id="daoParent" abstract="true">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>
+
+	<!-- Get this from Core Client Context??  Seems like we should migrate that to a File Sync client someday
+	<bean id="fileSynchronizationDao" class="com.jpmc.dart.dao.jdbc.FileSynchronizationDao" parent="daoParent"/>
+	<bean id="applicationDatacenterDao" class="com.jpmc.dart.dao.jdbc.ApplicationDatacenterCacheDao" parent="baseDao"/>
+	-->
+
+	<bean id="serviceClient" class="com.jpmc.dart.filesync.serviceclient.ServiceClient">
+		<!-- Defined in core-client-services -->
+		<property name="fileSynchronizationDao" ref="FileSynchronizationDao" />
+		<property name="destinationQueue" value="${dart.filesync.work.queue}" />
+		<property name="jmxWrapper" ref="jmxWrapper" />
+		<property name="jmsQueueMax" value="${dart.filesync.work.jmsqueuemax}" />
+		<property name="retryCountMax" value="${dart.filesync.retrycountmax}"/>
+		<property name="ctoJmsTemplate" ref="fwkCtoFwkJmsTemplate" />
+		<property name="fileSyncClient" ref="fileSyncClient"/>
+	</bean>
+
+	<bean id="jmxWrapper" class="com.jpmc.dart.commons.monitor.JmxQueueInspector">
+		<property name="rmiConnectorHost" value="${jmx.rmi.connector.host}" />
+		<property name="rmiRegistryPort" value="${jmx.rmi.registry.port}" />
+	</bean>
+
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>
+
+	<bean id="configDao" class="com.jpmc.vpc.dao.jdbc.ConfigurationDao">
+		<property name="dataSource" ref="dartDataSource" />
+	</bean>
+
+	<!-- JMS listener ends -->
+
+	<!-- Http file sender related beans start -->
+	<bean id="fileSyncHttpSender" class="com.jpmc.dart.filesync.http.HttpFileSender">
+		<property name="passkey" value="${file.server.pazz}"/>
+		<property name="retryCount" value="${dart.filesync.filesender.retrycount}"/>
+		<property name="targetUrl" value="${dart.filesync.worker.targeturl}"/>
+	</bean>
+
+	<bean id="httpClient" class="org.apache.commons.httpclient.HttpClient" scope="prototype">
+		<constructor-arg ref="httpConnManager" />
+		<property name="params" ref="httpClientParams" />
+	</bean>
+
+	<bean id="httpClientParams" class="org.apache.commons.httpclient.params.HttpClientParams">
+		<property name="connectionManagerTimeout" value="300000" />
+		<property name="soTimeout" value="300000" />
+	</bean>
+
+	<bean id="httpConnManager"
+		class="org.apache.commons.httpclient.SimpleHttpConnectionManager"
+		destroy-method="shutdown"
+		scope="prototype">
+		<property name="params" ref="httpConnParams" />
+	</bean>
+
+	<bean id="httpConnParams"
+		class="org.apache.commons.httpclient.params.HttpConnectionManagerParams"
+		parent="baseHttpConnParams">
+		<property name="maxTotalConnections" value="${dart.filesync.http.client.max.total.connections}" />
+		<property name="defaultMaxConnectionsPerHost" value="${dart.filesync.http.client.max.host.connections}" />
+
+	</bean>
+
+	<bean id="baseHttpConnParams"
+		class="org.apache.commons.httpclient.params.HttpConnectionManagerParams"
+		abstract="true">
+		<property name="connectionTimeout" value="300000" />
+		<property name="soTimeout" value="300000" />
+		<property name="tcpNoDelay" value="true" />
+		<property name="sendBufferSize" value="100000" />
+		<property name="staleCheckingEnabled" value="true" />
+	</bean>
+
+	<!-- Http file sender related beans end -->
+
+</beans>
